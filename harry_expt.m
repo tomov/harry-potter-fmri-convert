@@ -47,9 +47,11 @@ function EXPT = harry_expt(local)
     
     [subjdirs, goodRuns] = harry_getSubjectsDirsAndRuns();
     
-    for subj = 1:length(allSubjects)
-        subjdir = [exptdir, 'subjects/', subjdirs{subj}, '/'];
-        EXPT.subject(subj).datadir = [subjdir, 'preproc'];
+    for subj = 1:length(subjdirs)
+        subjdir = fullfile(exptdir, 'subjects', subjdirs{subj});
+        EXPT.subject(subj).subjdir = subjdir;
+        EXPT.subject(subj).datadir = fullfile(subjdir, 'preproc');
+        EXPT.subject(subj).rawdir = fullfile(subjdir, 'RAW');
         
         EXPT.subject(subj).structural = 'does not exist.nii';
         

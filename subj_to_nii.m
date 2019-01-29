@@ -1,15 +1,15 @@
-function subj_to_nii(subj_idx)
+function subj_to_nii(EXPT, subj)
 
     % convert data for given subject to 4D nifti format (x, y, z, TR)
     %
 
     % load stuff
-    filename = fullfile('subjects', sprintf('subject_%d.mat', subj_idx));
+    filename = fullfile(EXPT.subject(subj).rawdir, sprintf('subject_%d.mat', subj));
     load(filename);
 
     % create output directory
-    subj_dirname = fullfile('subjects', sprintf('HARRY_%03d', subj_idx));
-    preproc_dirname = fullfile(subj_dirname, 'preproc');
+    subj_dirname = EXPT.subject(subj).subjdir);
+    preproc_dirname = EXPT.subject(subj).datadir;
     mkdir(subj_dirname);
     mkdir(preproc_dirname);
     
