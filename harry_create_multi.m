@@ -30,7 +30,7 @@ function multi = harry_create_multi(glmodel, subj, run, save_output)
 
 
     % load stuff
-    filename = fullfile(EXPT.subject(subj).rawdir, sprintf('subject_%d.mat', subj_idx));
+    filename = fullfile(sprintf('subject_%d.mat', subj));
     load(filename);
 
     [subjdirs, goodRuns] = harry_getSubjectsDirsAndRuns();
@@ -42,24 +42,31 @@ function multi = harry_create_multi(glmodel, subj, run, save_output)
     
 
     % which rows from the data correspond to that run
-    which_rows = time(:,2) == run;
-    fprintf('which_rows = %s\n', sprintf('%d', which_rows));
+    which_TRs = time(:,2) == run;
+    fprintf('which_TRs = %s\n', sprintf('%d', which_TRs));
 
-    TR_times = time(which_rows,1);
-    run_onset = TR_times(1); % we need to subtract it from the word times
+    % get run start and end times
+    TRs = time(which_TRs,1);
+    run_onset = TRs(1); % we also need to subtract it from the word times
+    run_offset = TRs(end); 
 
+    % figure out which words were shown in this run
+    which_rows = [words.start] >= run_onset & [words.start] <= run_offset;
 
     % get words and onsets for run
     onsets = [words(which_rows).start];
     onsets = onsets - run_onset; % b/c they count them for the whole session
     texts = [words(which_rows).text];
 
+    % which words correspond to sentence starts and ends
+    sentence_ends = find(endsWith(texts, '.')); % TODO hacky, e.g. "Mrs." fails, but whatevs it's a first pass
+    sentence_starts = [1 sentence_ends(1:end-1)-1];
 
     % GLMs
     %
     switch glmodel
 
-        % impulse regressor for every word
+        % impulse regressor for every word (0.5 sec)
         %
         case 1 
             
@@ -72,7 +79,7 @@ function multi = harry_create_multi(glmodel, subj, run, save_output)
                 multi.durations{idx} = [0];
             end
 
-        % impulse regressor for every 4 words
+        % impulse regressor for every 4 words (2 sec = 1 TR)
         %
         case 2 
             
@@ -85,15 +92,25 @@ function multi = harry_create_multi(glmodel, subj, run, save_output)
                 multi.durations{idx} = [0];
             end
 
-
-        % boxcar regressor for every sentence
+        % impulse regressor for every 8 words (4 sec = 2 TRs)
         %
         case 3 
             
             idx = 0;
 
-            sentence_ends = find(endsWith(texts, '.')); % TODO hacky, e.g. "Mrs." fails, but whatevs it's a first pass
-            sentence_starts = [1 sentence_starts(1:end-1)-1];
+            for t = 8:8:numel(onsets)
+                idx = idx + 1;
+                multi.names{idx} = sprintf('stim_onset_run_%d_word_%d', run, t); 
+                multi.onsets{idx} = [onsets(t)];
+                multi.durations{idx} = [0];
+            end
+
+
+        % boxcar regressor for every sentence
+        %
+        case 4 
+            
+            idx = 0;
 
             for s = 1:numel(sentence_starts)
                 idx = idx + 1;
@@ -103,18 +120,15 @@ function multi = harry_create_multi(glmodel, subj, run, save_output)
             end
 
 
-        % ramp regressor for every sentence
+        % ramp regressor for every sentence TODO make sure it's indeed that; use ccnl_plot_regressor
         %
-        case 4 
+        case 5 
             
             idx = 0;
 
-            sentence_ends = find(endsWith(texts, '.')); % TODO hacky, e.g. "Mrs." fails, but whatevs it's a first pass
-            sentence_starts = [1 sentence_starts(1:end-1)-1];
-
             for s = 1:numel(sentence_starts)
                 idx = idx + 1;
-                multi.names{idx} = sprintf('boxcar_run_%d_sentence%d', run, s); 
+                multi.names{idx} = sprintf('ramp_run_%d_sentence%d', run, s); 
                 multi.onsets{idx} = [onsets(sentence_starts(s))];
                 multi.durations{idx} = [onsets(sentence_ends(s) - sentence_starts(s))];
 

@@ -8,7 +8,7 @@ function subj_to_nii(EXPT, subj)
     load(filename);
 
     % create output directory
-    subj_dirname = EXPT.subject(subj).subjdir);
+    subj_dirname = EXPT.subject(subj).subjdir;
     preproc_dirname = EXPT.subject(subj).datadir;
     mkdir(subj_dirname);
     mkdir(preproc_dirname);
